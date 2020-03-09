@@ -8,13 +8,14 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+
+	"cloudlogger/repository"
 )
 
 func RetrieveLogStreams(session *session.Session, group string) (*cloudwatchlogs.DescribeLogStreamsOutput, error) {
 	svc := cloudwatchlogs.New(session)
 	input := cloudwatchlogs.DescribeLogStreamsInput{
 		Descending: aws.Bool(true),
-		Limit: aws.Int64(1),
 		LogGroupName: aws.String(group),
 	}
 
@@ -30,12 +31,12 @@ func RetrieveLogStreams(session *session.Session, group string) (*cloudwatchlogs
 	return result, nil
 }
 
-func Send(session *session.Session, group string, stream string, token string, logs []string) error {
+func Send(session *session.Session, group string, stream string, token string, logs *repository.LogRepository) error {
 	events := []*cloudwatchlogs.InputLogEvent{}
-	for _, log := range logs {
+	for _, log := range *logs.GetLogs() {
 		events = append(events, &cloudwatchlogs.InputLogEvent{
-			Message:   aws.String(log),
-			Timestamp: aws.Int64(time.Now().UnixNano() / int64(time.Millisecond)),
+			Message:   aws.String(log.GetMessage()),
+			Timestamp: aws.Int64(log.GetTime().UnixNano() / int64(time.Millisecond)),
 		})
 	}
 
@@ -67,8 +68,13 @@ func GetNextForwardToken(session *session.Session, group string, stream string) 
 		return "", err
 	}
 
+
 	for _, log := range result.LogStreams {
 		if *log.LogStreamName == stream {
+			if log.UploadSequenceToken == nil {
+				return "", nil
+			}
+
 			return *log.UploadSequenceToken, nil
 		}
 	}
