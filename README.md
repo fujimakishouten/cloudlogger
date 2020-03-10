@@ -1,7 +1,26 @@
 # Cloud Logger
+
 Send log data to AWS cloud watch log.
 
+
+## Requirements
+
+- Go
+    - We confirm build with 1.14
+
+
+## Install
+
+```bash
+git clone https://github.com/fujimakishouten/cloudlogger.git
+
+cd cloudlogger
+go build
+```
+
+
 ## Description
+
 Send log to AWS cloud watch log.
 AWS access key and access key secret are load from ~/.aws/credential file or environment variables.
 
@@ -15,6 +34,7 @@ cloud logger --group test --stream --default "Log 1
 Log 2
 Log 3"
 ```
+
 
 ## Usage
 ```
@@ -35,6 +55,7 @@ Flags:
 Args:
   [<log>]  Log text.
 ```
+
 
 ## Example
 
