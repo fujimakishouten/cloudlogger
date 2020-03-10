@@ -6,13 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"io/ioutil"
 
 	"cloudlogger/service"
-	)
+)
 
 const version = "1.0.0"
 var (
@@ -53,8 +52,8 @@ func main() {
 		app.FatalUsage(err.Error())
 	}
 
-	sess := session.Must(session.NewSession(&aws.Config{
-		Region: aws.String("us-east-1"),
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
 	}))
 	token, err := service.GetNextForwardToken(sess, *group, *stream)
 	if !errors.Is(err, nil) {
