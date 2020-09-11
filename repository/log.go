@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"time"
 
-	"cloudlogger/entity"
+	"github.com/fujimakishouten/cloudlogger/entity"
 )
 
 type LogRepository struct {

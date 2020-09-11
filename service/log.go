@@ -4,7 +4,7 @@ import (
 	"errors"
 	"regexp"
 
-	"cloudlogger/repository"
+	"github.com/fujimakishouten/cloudlogger/repository"
 )
 
 // Load log

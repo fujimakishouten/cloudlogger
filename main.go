@@ -2,15 +2,16 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/fujimakishouten/cloudlogger/service"
+	"io/ioutil"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
 	"gopkg.in/alecthomas/kingpin.v2"
-	"io/ioutil"
-
-	"cloudlogger/service"
 )
 
 const version = "1.0.0"
@@ -55,12 +56,21 @@ func main() {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
-	token, err := service.GetNextForwardToken(sess, *group, *stream)
+	svc := cloudwatchlogs.New(sess)
+
+	err = service.EnsureLogGroup(svc, *group)
 	if !errors.Is(err, nil) {
-		app.FatalUsage(err.Error())
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
-	err = service.Send(sess, *group, *stream, token, logs)
+	err = service.EnsureLogStream(svc, *group, *stream)
+	if !errors.Is(err, nil) {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	err = service.Send(svc, *group, *stream, logs)
 	if !errors.Is(err, nil) {
 		app.FatalUsage(err.Error())
 	}
