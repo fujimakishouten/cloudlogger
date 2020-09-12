@@ -162,11 +162,6 @@ func Send(svc *cloudwatchlogs.CloudWatchLogs, group string, stream string, logs 
 		})
 	}
 
-	input := cloudwatchlogs.PutLogEventsInput{
-		LogEvents: events,
-		LogGroupName: aws.String(group),
-		LogStreamName: aws.String(stream),
-	}
 	token, err := GetSequenceToken(svc, group, stream)
 	if !errors.Is(err, nil) {
 		if aerr, ok := err.(awserr.Error); ok {
@@ -175,18 +170,40 @@ func Send(svc *cloudwatchlogs.CloudWatchLogs, group string, stream string, logs 
 
 		return err
 	}
-	if token != "" {
-		input.SequenceToken = aws.String(token)
-	}
 
-	_, err = svc.PutLogEvents(&input)
-	if !errors.Is(err, nil) {
-		if aerr, ok := err.(awserr.Error); ok {
-			return aerr;
+	var put func (count int, size int, token string) error
+	put = func (count int, size int, token string) error {
+		if count >= len(events) {
+			return nil
 		}
 
-		return err;
+		length := count + size
+		if length > len(events) {
+			length = len(events)
+		}
+
+		input := cloudwatchlogs.PutLogEventsInput{
+			LogEvents: events[count:length],
+			LogGroupName: aws.String(group),
+			LogStreamName: aws.String(stream),
+		}
+		if token != "" {
+			input.SequenceToken = aws.String(token)
+		}
+
+		result, err := svc.PutLogEvents(&input)
+		if !errors.Is(err, nil) {
+			if aerr, ok := err.(awserr.Error); ok {
+				return aerr;
+			}
+
+			return err;
+		}
+
+		time.Sleep(200 * time.Millisecond)
+
+		return put(count + size, size, *result.NextSequenceToken)
 	}
 
-	return nil
+	return put(0, 10000, token)
 }

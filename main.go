@@ -38,6 +38,7 @@ func main() {
 
 	if status.Size() > 0 {
 		data, err := ioutil.ReadAll(os.Stdin)
+
 		if !errors.Is(err, nil) {
 			app.FatalUsage(err.Error())
 		}
@@ -48,7 +49,7 @@ func main() {
 		app.FatalUsage("Options: log are required.")
 	}
 
-	logs, err := service.Load(*re, *format, strings.Split(*log, "\n"))
+	logs, err := service.Load(*re, *format, strings.Split(strings.TrimSpace(*log), "\n"))
 	if !errors.Is(err, nil) {
 		app.FatalUsage(err.Error())
 	}
