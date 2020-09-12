@@ -19,6 +19,7 @@ var (
 	app = kingpin.New("clowdlogger", "Send log data to AWS CloudWatch.")
 	group = app.Flag("group", "Log group name").Short('g').Required().String()
 	stream = app.Flag("stream", "Log stream name").Short('s').Required().String()
+	lines = app.Flag("lines", "Number of lines sent at one time").Short('1').Default("10000").Int()
 	re = app.Flag("time-regexp", "Time regexp").Short('t').Default("").String()
 	format = app.Flag("time-format", "Time format").Short('f').Default(time.RFC3339).String()
 	log = app.Arg("log", "Log text.").String()
@@ -36,7 +37,7 @@ func main() {
 		app.FatalUsage(err.Error())
 	}
 
-	if status.Size() > 0 {
+	if status.Mode() & os.ModeNamedPipe != 0 {
 		data, err := ioutil.ReadAll(os.Stdin)
 
 		if !errors.Is(err, nil) {
@@ -71,7 +72,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = service.Send(svc, *group, *stream, logs)
+	err = service.Send(svc, *group, *stream, *lines, logs)
 	if !errors.Is(err, nil) {
 		app.FatalUsage(err.Error())
 	}

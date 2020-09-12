@@ -153,7 +153,7 @@ func GetSequenceToken(svc *cloudwatchlogs.CloudWatchLogs, group string, stream s
 }
 
 
-func Send(svc *cloudwatchlogs.CloudWatchLogs, group string, stream string, logs *repository.LogRepository) error {
+func Send(svc *cloudwatchlogs.CloudWatchLogs, group string, stream string, length int, logs *repository.LogRepository) error {
 	events := []*cloudwatchlogs.InputLogEvent{}
 	for _, log := range *logs.GetLogs() {
 		events = append(events, &cloudwatchlogs.InputLogEvent{
@@ -171,19 +171,19 @@ func Send(svc *cloudwatchlogs.CloudWatchLogs, group string, stream string, logs 
 		return err
 	}
 
-	var put func (count int, size int, token string) error
-	put = func (count int, size int, token string) error {
+	var put func (count int, token string) error
+	put = func (count int, token string) error {
 		if count >= len(events) {
 			return nil
 		}
 
-		length := count + size
-		if length > len(events) {
-			length = len(events)
+		size := count + length
+		if size > len(events) {
+			size = len(events)
 		}
 
 		input := cloudwatchlogs.PutLogEventsInput{
-			LogEvents: events[count:length],
+			LogEvents: events[count:size],
 			LogGroupName: aws.String(group),
 			LogStreamName: aws.String(stream),
 		}
@@ -202,8 +202,8 @@ func Send(svc *cloudwatchlogs.CloudWatchLogs, group string, stream string, logs 
 
 		time.Sleep(200 * time.Millisecond)
 
-		return put(count + size, size, *result.NextSequenceToken)
+		return put(size, *result.NextSequenceToken)
 	}
 
-	return put(0, 10000, token)
+	return put(0, token)
 }
